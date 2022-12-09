@@ -7,6 +7,7 @@ from sqlalchemy import func
 from database import database
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+import requests, random
 
 router = APIRouter(tags=["Parkiran Motor"])
 
@@ -97,3 +98,24 @@ def motor_menginap(db: Session = Depends(database.get_db), current_user: schemas
     for i in range(len(informasi_motor)):
         list_output.append(f"Motor dengan plat {informasi_motor[i][0]} sudah menginap {int(informasi_motor[i][1])} hari")
     return list_output
+
+@router.get('/prediksi/{tempat_parkir}/{hari}')
+def prediksi_kepadatan(tempat_parkir: str, hari: str, waktu: str, db: Session = Depends(database.get_db), current_user: schemas.User = Depends(OAuth2.get_current_user)):
+    BASE_URL = 'https://project-tst-mhs.azurewebsites.net'
+    
+    kuota = db.query(models.TempatParkir.kuota).filter(models.TempatParkir.tempat_parkir == tempat_parkir.title()).first()
+    if not kuota:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=["Nama parkiran tidak ditemukan"])
+
+    try:
+        response = requests.get(f"{BASE_URL}/participant/day={hari}/time={waktu}")
+        data = response.json()
+        
+        kuota = kuota[0]
+        jml_mhs = int(data['total'])
+        rand = random.random()
+        prediksi = jml_mhs * rand * 100 / int(kuota)
+        return (f"Prediksi kepadatan pada hari {hari} {waktu} hari di parkiran {tempat_parkir} adalah %.2f%" % prediksi)
+
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=["Nama hari tidak valid"])
