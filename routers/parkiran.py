@@ -115,7 +115,7 @@ def prediksi_kepadatan(tempat_parkir: str, hari: str, waktu: str, db: Session = 
         jml_mhs = int(data['total'])
         rand = random.random()
         prediksi = jml_mhs * rand * 100 / int(kuota)
-        return (f"Prediksi kepadatan pada hari {hari} {waktu} hari di parkiran {tempat_parkir} adalah %.2f%" % prediksi)
+        return (f"Prediksi kepadatan pada hari {hari} {waktu} hari di parkiran {tempat_parkir} adalah %.2f persen" % prediksi)
 
     except KeyError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=["Nama hari tidak valid"])
